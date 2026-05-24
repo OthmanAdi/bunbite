@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BunBite — Image Optimization</title>
+  <link rel="stylesheet" href="/style.css">
+  <meta name="description" content="Lightning-fast image optimization. Convert, compress, and resize images in your browser.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%236366f1'/><text x='16' y='23' text-anchor='middle' fill='white' font-size='18' font-weight='bold'>P</text></svg>">
+</head>
+<body>
+  <div class="bg-gradient"></div>
+  <div class="bg-grid"></div>
+
+  <header class="header">
+    <div class="container">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 32 32" fill="none">
+            <rect x="2" y="2" width="28" height="28" rx="6" stroke="url(#g1)" stroke-width="2.5"/>
+            <path d="M8 22L14 14L18 18L22 12L26 22" stroke="url(#g1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="12" cy="10" r="2.5" fill="url(#g1)"/>
+            <defs><linearGradient id="g1" x1="0" y1="0" x2="32" y2="32"><stop stop-color="#6366f1"/><stop offset="1" stop-color="#a855f7"/></linearGradient></defs>
+          </svg>
+        </div>
+        <span class="logo-text">BunBite</span>
+        <span class="badge" id="engineBadge">Detecting...</span>
+      </div>
+      <div class="header-right">
+        <div class="tier-pill" id="tierPill">
+          <span class="tier-dot"></span>
+          <span id="tierLabel">Free</span>
+          <span class="tier-sep">·</span>
+          <span id="remainingLabel">∞</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="container">
+
+      <section class="hero">
+        <h1>Optimize images at <span class="gradient-text">lightning speed</span></h1>
+        <p class="hero-sub">Convert, compress, and resize images instantly — right in your browser. Your images never leave your device.</p>
+      </section>
+
+      <section class="controls glass-card">
+        <div class="controls-row">
+          <div class="control">
+            <label for="selFormat">Format</label>
+            <select id="selFormat">
+              <option value="webp">WebP (best compression)</option>
+              <option value="jpeg">JPEG</option>
+              <option value="png">PNG</option>
+            </select>
+          </div>
+          <div class="control control-wide">
+            <label for="rngQuality">Quality: <strong id="valQuality">80</strong>%</label>
+            <input type="range" id="rngQuality" min="1" max="100" value="80">
+          </div>
+          <div class="control">
+            <label for="inpWidth">Max Width</label>
+            <input type="number" id="inpWidth" placeholder="Auto" min="1" max="8192">
+          </div>
+          <div class="control">
+            <label for="inpHeight">Max Height</label>
+            <input type="number" id="inpHeight" placeholder="Auto" min="1" max="8192">
+          </div>
+        </div>
+        <div class="controls-row toggles">
+          <label class="toggle"><input type="checkbox" id="chkNoUpscale" checked><span class="toggle-track"><span class="toggle-thumb"></span></span>Don't upscale</label>
+          <label class="toggle"><input type="checkbox" id="chkProgressive"><span class="toggle-track"><span class="toggle-thumb"></span></span>Progressive JPEG</label>
+        </div>
+      </section>
+
+      <section class="drop-zone" id="dropZone">
+        <div class="drop-inner">
+          <svg class="drop-icon" viewBox="0 0 48 48" fill="none"><path d="M24 32V12M24 12L16 20M24 12L32 20" stroke="url(#g2)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 32V38C8 39.1 8.9 40 10 40H38C39.1 40 40 39.1 40 38V32" stroke="url(#g2)" stroke-width="3" stroke-linecap="round"/><defs><linearGradient id="g2" x1="8" y1="12" x2="40" y2="40"><stop stop-color="#6366f1"/><stop offset="1" stop-color="#a855f7"/></linearGradient></defs></svg>
+          <h3>Drop images here or click to browse</h3>
+          <p>JPEG, PNG, WebP, BMP, GIF · Max 50MB per file</p>
+        </div>
+        <input type="file" id="fileInput" multiple accept="image/*" hidden>
+      </section>
+
+      <section class="queue" id="queueSection" hidden>
+        <div class="section-head">
+          <h2>Queue <span class="count" id="queueCount">0</span></h2>
+          <button class="btn btn-primary" id="btnProcess">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M6.3 2.84A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.27l9.344-5.891a1.5 1.5 0 000-2.538L6.3 2.841z"/></svg>
+            Process All
+          </button>
+        </div>
+        <div class="queue-list" id="queueList"></div>
+      </section>
+
+      <section class="results" id="resultsSection" hidden>
+        <div class="section-head">
+          <h2>Results</h2>
+          <div class="btn-group">
+            <button class="btn btn-primary" id="btnDownloadAll">Download All</button>
+            <button class="btn btn-ghost" id="btnClear">Clear</button>
+          </div>
+        </div>
+        <div class="stats-bar glass-card" id="statsBar"></div>
+        <div class="results-grid" id="resultsGrid"></div>
+      </section>
+
+      <section class="features">
+        <div class="features-grid">
+          <div class="feature glass-card"><div class="feat-icon">🔒</div><h3>Privacy First</h3><p>Images processed locally in your browser. Nothing uploaded anywhere.</p></div>
+          <div class="feature glass-card"><div class="feat-icon">⚡</div><h3>Instant Results</h3><p>Canvas API processes images in milliseconds. No waiting.</p></div>
+          <div class="feature glass-card"><div class="feat-icon">📦</div><h3>Batch Processing</h3><p>Drop multiple images and convert them all at once.</p></div>
+          <div class="feature glass-card"><div class="feat-icon">🎨</div><h3>Format Control</h3><p>JPEG, PNG, WebP with fine-grained quality settings.</p></div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p>BunBite · Built with Bun · Client-side image processing · <a href="https://github.com" target="_blank">Open Source</a></p>
+    </div>
+  </footer>
+
+  <div class="toast-container" id="toasts"></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

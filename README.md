@@ -2,6 +2,8 @@
 
 **An experiment in AI-assisted rapid prototyping with Qwen 3.7 Max running in Hermes Agent**
 
+**[🌐 Project Website](https://marine-nimbus-hnkj.here.now/) · [⚡ Live App](https://gleaming-yarrow-bbma.here.now/)**
+
 ---
 
 ## 💬 The Prompt
@@ -43,6 +45,7 @@ The challenge: Build a complete image optimization platform, test it thoroughly 
 - **Runs client-side** (Canvas API) with optional server enhancement (Bun.Image)
 - **Monetizes** with a freemium model (5 free/day, unlimited for Pro)
 
+**Project website:** https://marine-nimbus-hnkj.here.now/  
 **Live demo:** https://gleaming-yarrow-bbma.here.now/  
 **Local with server:** http://localhost:3000
 

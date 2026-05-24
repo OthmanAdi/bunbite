@@ -4,6 +4,16 @@
 
 ---
 
+## 💬 The Prompt
+
+This project started with a single, high-stakes message — a brief that demanded urgency, technical depth, and portfolio-grade quality. Here's an excerpt from the original prompt that kicked off the entire session:
+
+> "This mission is critical and I need you to understand that. Work like an engineer — build in sandboxes, use every skill and ability available to you. This is a long-running mission: go step by step, take your time, break it down, and deliver the very best result. I want a reliable, monetizable app that people will pay for. Build it so well and so beautifully that I can put it on my CV."
+
+That one paragraph set the tone: sandboxed development, end-to-end delivery, no shortcuts, and a quality bar high enough to stake a career on. The AI agent (Qwen 3.7 Max via Hermes) took it from there — research, architecture, implementation, testing, and deployment — all within a single focused session.
+
+---
+
 ## 📋 The Mission Brief
 
 The goal was to take a brand-new, barely-documented API (Bun 1.3.14's native Image processing) and turn it into a production-ready SaaS product — from research to live deployment — in a single session. The constraints were deliberately ambitious:

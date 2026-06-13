@@ -1,4 +1,51 @@
-# 🚀 BunBite: Building an Image Optimizer with Bun 1.3.14 in Under an Hour
+# BunBite — fast, private image optimization
+
+Convert, compress, and resize images right in the browser. Privacy first (images never leave the device on the free tier), with an optional Bun powered server for stronger compression. Available in **English, Deutsch, and العربية** with full right-to-left support.
+
+**[▶ Live preview](https://waxen-garnet-z6gw.here.now/)** · **[Pricing](https://waxen-garnet-z6gw.here.now/pricing.html)** · **[Source](https://github.com/OthmanAdi/bunbite)**
+
+> Production host: Fly.io (`bunbite.fly.dev`). See [DEPLOY.md](DEPLOY.md).
+
+## Features
+- **Trilingual**: English / German / Arabic, with Arabic rendered right-to-left. Language is auto-detected and remembered.
+- **Formats**: WebP, JPEG, PNG with a quality slider, max width/height, and "don't upscale".
+- **Two engines**: client-side Canvas (works offline, fully private) and an optional Bun.Image server for better compression.
+- **Batch**: drop many images, convert them all (Pro).
+- **Freemium**: real Free/Pro tiers backed by a durable store, not a toggle.
+
+## Pricing
+| | Free | Pro |
+|---|---|---|
+| In-browser optimization | Unlimited | Unlimited |
+| Server optimization | 5 / day | 500 / day |
+| Max file size | 5 MB | 50 MB |
+| Batch | — | up to 20 |
+| API key access | — | ✓ |
+
+Pro is €9/mo or €90/yr, handled by Stripe. Free needs no account.
+
+## Run it
+```bash
+# Static (client-side only, no server)
+bunx serve public        # or: python3 -m http.server -d public 8080
+
+# Full stack (Bun server with the optimization API)
+cd server && bun install && cd ..
+bun run server/server.ts # http://localhost:3000
+
+# Docker
+docker build -t bunbite . && docker run -p 3000:3000 -v bunbite_data:/data bunbite
+```
+
+## Tech
+Bun 1.3 · zero runtime dependencies · `bun:sqlite` for keys/usage · Stripe (REST + HMAC webhooks) · vanilla HTML/CSS/JS frontend with a hand-rolled i18n layer. Tests run in CI (frontend syntax, i18n coverage across all three languages, server store/auth/rate-limit, webhook signatures).
+
+## Architecture (short version)
+The frontend probes `/api/health`. If a Bun server answers, images are optimized server-side via `Bun.Image`; otherwise everything runs locally through the Canvas API. Tiers resolve from a validated API key (Pro) or the caller IP (Free); usage is tracked in SQLite so limits survive restarts and redeploys.
+
+---
+
+## 🧪 How it was built (the original 1-hour experiment)
 
 **An experiment in AI-assisted rapid prototyping with Qwen 3.7 Max running in Hermes Agent**
 

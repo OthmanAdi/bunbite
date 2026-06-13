@@ -11,6 +11,7 @@
   const results = [];
   let processing = false;
   let serverAvailable = false;
+  let serverChecked = false;
 
   // ═══ DOM ═══
   const $ = (s) => document.querySelector(s);
@@ -36,6 +37,11 @@
   const engineBadge = $("#engineBadge");
   const tierLabel = $("#tierLabel");
   const remainingLabel = $("#remainingLabel");
+  const langSelect = $("#langSelect");
+
+  // i18n shortcuts
+  const t = (k, v) => (window.I18N ? window.I18N.t(k, v) : k);
+  const nfmt = (n) => (window.I18N ? window.I18N.formatNumber(n) : String(n));
 
   // ═══ INIT ═══
   document.addEventListener("DOMContentLoaded", init);
@@ -71,6 +77,46 @@
     btnProcess.addEventListener("click", processAll);
     btnDownloadAll.addEventListener("click", downloadAll);
     btnClear.addEventListener("click", clearAll);
+
+    // Language switcher
+    if (langSelect && window.I18N) {
+      langSelect.value = window.I18N.getLang();
+      langSelect.addEventListener("change", () => window.I18N.setLang(langSelect.value));
+      window.I18N.onChange(onLangChange);
+    }
+
+    // Initial chrome (badge + tier + process button) in the active language
+    renderChrome();
+  }
+
+  // ═══ I18N-DRIVEN CHROME ═══
+  function processBtnLabel() {
+    return '<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M6.3 2.84A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.27l9.344-5.891a1.5 1.5 0 000-2.538L6.3 2.841z"/></svg> ' + esc(t("queue.processAll"));
+  }
+
+  function renderChrome() {
+    // Engine badge
+    if (!serverChecked) {
+      engineBadge.textContent = t("badge.detecting");
+      engineBadge.className = "badge";
+    } else if (serverAvailable) {
+      engineBadge.textContent = t("badge.server");
+      engineBadge.className = "badge";
+    } else {
+      engineBadge.textContent = t("badge.client");
+      engineBadge.className = "badge client";
+    }
+    // Tier pill (real quota wired in Wave 2; client mode = unlimited local)
+    tierLabel.textContent = t("tier.free");
+    remainingLabel.textContent = t("tier.unlimited");
+    // Process button (only when idle; processing state owns it during a run)
+    if (!processing) btnProcess.innerHTML = processBtnLabel();
+  }
+
+  function onLangChange() {
+    renderChrome();
+    if (queue.length) renderQueue();
+    if (results.length) renderResults();
   }
 
   // ═══ SERVER DETECTION ═══
@@ -79,9 +125,9 @@
       const res = await fetch("/api/health", { signal: AbortSignal.timeout(2000) });
       if (res.ok) {
         serverAvailable = true;
-        engineBadge.textContent = "Server Enhanced";
-        engineBadge.className = "badge";
-        toast("Server API detected — enhanced compression available", "ok");
+        serverChecked = true;
+        renderChrome();
+        toast(t("toast.serverDetected"), "ok");
       } else {
         setClientMode();
       }
@@ -92,16 +138,14 @@
 
   function setClientMode() {
     serverAvailable = false;
-    engineBadge.textContent = "Browser Engine";
-    engineBadge.className = "badge client";
-    tierLabel.textContent = "Free";
-    remainingLabel.textContent = "Unlimited";
+    serverChecked = true;
+    renderChrome();
   }
 
   // ═══ FILE HANDLING ═══
   function addFiles(fileList) {
     const files = Array.from(fileList).filter((f) => f.type.startsWith("image/"));
-    if (!files.length) { toast("No valid images found", "warn"); return; }
+    if (!files.length) { toast(t("toast.noValid"), "warn"); return; }
 
     for (const file of files) {
       const id = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
@@ -113,7 +157,7 @@
     }
 
     renderQueue();
-    toast(files.length + " image" + (files.length > 1 ? "s" : "") + " added", "ok");
+    toast(t("toast.added", { count: files.length }), "ok");
   }
 
   // ═══ QUEUE RENDER ═══
@@ -148,17 +192,17 @@
   }
 
   function statusText(s) {
-    return { pending: "Waiting", processing: "Processing...", done: "Done ✓", error: "Failed" }[s] || s;
+    return t("status." + s);
   }
 
   // ═══ PROCESSING ═══
   async function processAll() {
     const pending = queue.filter((q) => q.status === "pending");
-    if (!pending.length) { toast("No images to process", "warn"); return; }
+    if (!pending.length) { toast(t("toast.noProcess"), "warn"); return; }
     if (processing) return;
     processing = true;
     btnProcess.disabled = true;
-    btnProcess.innerHTML = '<span>Processing...</span>';
+    btnProcess.innerHTML = "<span>" + esc(t("btn.processing")) + "</span>";
 
     for (const item of pending) {
       item.status = "processing";
@@ -171,17 +215,17 @@
         results.push(result);
       } catch (e) {
         item.status = "error";
-        toast("Failed: " + item.name + " — " + e.message, "err");
+        toast(t("toast.failed", { name: item.name, msg: e.message }), "err");
       }
       renderQueue();
     }
 
     processing = false;
     btnProcess.disabled = false;
-    btnProcess.innerHTML = '<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M6.3 2.84A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.27l9.344-5.891a1.5 1.5 0 000-2.538L6.3 2.841z"/></svg> Process All';
+    btnProcess.innerHTML = processBtnLabel();
 
     if (results.length) renderResults();
-    toast(results.length + " image" + (results.length > 1 ? "s" : "") + " optimized!", "ok");
+    toast(t("toast.optimized", { count: results.length }), "ok");
   }
 
   async function processImage(item) {
@@ -392,11 +436,11 @@
     const avgSaved = results.length ? Math.round(results.reduce((s, r) => s + Math.max(0, r.savedPercent), 0) / results.length) : 0;
 
     statsBar.innerHTML =
-      '<div class="stat"><span class="stat-val">' + results.length + '</span><span class="stat-lbl">Images</span></div>' +
-      '<div class="stat"><span class="stat-val">' + fmtBytes(totalSaved) + '</span><span class="stat-lbl">Saved</span></div>' +
-      '<div class="stat"><span class="stat-val">' + avgSaved + '%</span><span class="stat-lbl">Avg Reduction</span></div>' +
-      '<div class="stat"><span class="stat-val">' + fmtBytes(totalOrig) + '</span><span class="stat-lbl">Original</span></div>' +
-      '<div class="stat"><span class="stat-val">' + fmtBytes(totalOpt) + '</span><span class="stat-lbl">Optimized</span></div>';
+      '<div class="stat"><span class="stat-val">' + nfmt(results.length) + '</span><span class="stat-lbl">' + esc(t("stats.images")) + '</span></div>' +
+      '<div class="stat"><span class="stat-val">' + fmtBytes(totalSaved) + '</span><span class="stat-lbl">' + esc(t("stats.saved")) + '</span></div>' +
+      '<div class="stat"><span class="stat-val">' + nfmt(avgSaved) + '%</span><span class="stat-lbl">' + esc(t("stats.avg")) + '</span></div>' +
+      '<div class="stat"><span class="stat-val">' + fmtBytes(totalOrig) + '</span><span class="stat-lbl">' + esc(t("stats.original")) + '</span></div>' +
+      '<div class="stat"><span class="stat-val">' + fmtBytes(totalOpt) + '</span><span class="stat-lbl">' + esc(t("stats.optimized")) + '</span></div>';
 
     // Grid
     resultsGrid.innerHTML = "";
@@ -407,10 +451,10 @@
         '<img class="rc-preview" src="' + r.previewUrl + '" alt="' + esc(r.name) + '">' +
         '<div class="rc-body">' +
         '<div class="rc-name">' + esc(r.name) + '</div>' +
-        '<div class="rc-metrics"><span>' + fmtBytes(r.originalSize) + ' &rarr; ' + fmtBytes(r.optimizedSize) + '</span>' +
-        '<span class="rc-saved">-' + r.savedPercent + '%</span></div>' +
-        '<div class="rc-dims">' + r.width + '&times;' + r.height + ' &middot; ' + r.format.toUpperCase() + '</div>' +
-        '<a class="rc-download" href="' + r.downloadUrl + '" download="' + esc(r.name) + '">Download</a>' +
+        '<div class="rc-metrics"><span dir="ltr">' + fmtBytes(r.originalSize) + ' &rarr; ' + fmtBytes(r.optimizedSize) + '</span>' +
+        '<span class="rc-saved">-' + nfmt(r.savedPercent) + '%</span></div>' +
+        '<div class="rc-dims" dir="ltr">' + nfmt(r.width) + '&times;' + nfmt(r.height) + ' &middot; ' + esc(r.format.toUpperCase()) + '</div>' +
+        '<a class="rc-download" href="' + r.downloadUrl + '" download="' + esc(r.name) + '">' + esc(t("results.download")) + '</a>' +
         '</div>';
       resultsGrid.appendChild(card);
     }
@@ -421,7 +465,7 @@
   // ═══ DOWNLOAD ALL ═══
   async function downloadAll() {
     if (!results.length) return;
-    toast("Downloading " + results.length + " files...", "ok");
+    toast(t("toast.downloading", { count: results.length }), "ok");
     for (let i = 0; i < results.length; i++) {
       const r = results[i];
       const a = document.createElement("a");
@@ -446,7 +490,7 @@
     resultsGrid.innerHTML = "";
     statsBar.innerHTML = "";
     fileInput.value = "";
-    toast("Cleared", "ok");
+    toast(t("toast.cleared"), "ok");
   }
 
   // ═══ TOAST ═══
@@ -465,9 +509,9 @@
 
   // ═══ UTILS ═══
   function fmtBytes(b) {
-    if (b === 0) return "0 B";
-    const k = 1024;
-    const u = ["B", "KB", "MB", "GB"];
+    if (window.I18N) return window.I18N.formatBytes(b);
+    if (!b || b <= 0) return "0 B";
+    const k = 1024, u = ["B", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(b) / Math.log(k));
     return parseFloat((b / Math.pow(k, i)).toFixed(1)) + " " + u[i];
   }

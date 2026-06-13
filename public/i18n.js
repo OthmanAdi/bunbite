@@ -317,4 +317,11 @@
     applyTranslations: applyTranslations,
     onChange: onChange,
   };
+
+  // Auto-translate static DOM as soon as it is ready (app.js re-applies after dynamic render).
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function () { applyTranslations(); });
+  } else {
+    applyTranslations();
+  }
 })();

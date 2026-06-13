@@ -31,6 +31,10 @@
         <span class="badge" id="engineBadge" data-i18n="badge.detecting">Detecting…</span>
       </div>
       <div class="header-right">
+        <a class="btn-upgrade" id="btnUpgrade" href="/pricing.html" data-i18n="nav.upgrade">Upgrade</a>
+        <button class="icon-btn" id="btnAccount" data-i18n-attr="aria-label:account.open" aria-label="Account">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M14 7a4 4 0 11-5.66 0M21 21l-4-4m4-9a3 3 0 11-6 0 3 3 0 016 0z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="9" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M4 19a5 5 0 0110 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </button>
         <label class="lang-switch" data-i18n-attr="aria-label:lang.label" aria-label="Language">
           <svg class="lang-globe" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M3 12h18M12 3c2.5 2.5 2.5 16 0 18M12 3c-2.5 2.5-2.5 16 0 18" stroke="currentColor" stroke-width="1.7"/></svg>
           <select id="langSelect">
@@ -132,6 +136,24 @@
       <p><span data-i18n="footer.tagline">BunBite · Built with Bun · Client-side image processing</span> · <a href="https://github.com/OthmanAdi/bunbite" target="_blank" rel="noopener" data-i18n="footer.openSource">Open Source</a></p>
     </div>
   </footer>
+
+  <div class="modal-overlay" id="accountModal" hidden>
+    <div class="modal glass-card" role="dialog" aria-modal="true" aria-labelledby="accTitle">
+      <button class="modal-close" id="accClose" aria-label="Close">&times;</button>
+      <h2 id="accTitle" data-i18n="account.title">Your Pro key</h2>
+      <span class="acc-status" id="accStatus"></span>
+      <p class="modal-intro" data-i18n="account.intro">Paste your BunBite Pro API key to unlock Pro limits.</p>
+      <label class="acc-field">
+        <span data-i18n="account.keyLabel">API key</span>
+        <input type="text" id="accKeyInput" data-i18n-attr="placeholder:account.placeholder" placeholder="bunbite_…" autocomplete="off" spellcheck="false">
+      </label>
+      <div class="acc-actions">
+        <button class="btn btn-primary" id="accSave" data-i18n="account.save">Activate</button>
+        <button class="btn btn-ghost" id="accClear" data-i18n="account.clear">Remove</button>
+        <a class="acc-get" href="/pricing.html" data-i18n="account.get">Get a Pro key</a>
+      </div>
+    </div>
+  </div>
 
   <div class="toast-container" id="toasts"></div>
 

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BunBite — Pricing</title>
+  <meta name="description" content="BunBite pricing: start free, upgrade to Pro for 500 images a day, 50 MB files, and batch processing.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Arabic:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%236366f1'/><text x='16' y='23' text-anchor='middle' fill='white' font-size='18' font-weight='bold'>B</text></svg>">
+  <script src="/i18n.js"></script>
+</head>
+<body>
+  <div class="bg-gradient"></div>
+  <div class="bg-grid"></div>
+
+  <header class="header">
+    <div class="container">
+      <a class="logo" href="/" style="text-decoration:none;color:inherit">
+        <div class="logo-icon">
+          <svg viewBox="0 0 32 32" fill="none"><rect x="2" y="2" width="28" height="28" rx="6" stroke="url(#g1)" stroke-width="2.5"/><path d="M8 22L14 14L18 18L22 12L26 22" stroke="url(#g1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.5" fill="url(#g1)"/><defs><linearGradient id="g1" x1="0" y1="0" x2="32" y2="32"><stop stop-color="#6366f1"/><stop offset="1" stop-color="#a855f7"/></linearGradient></defs></svg>
+        </div>
+        <span class="logo-text">BunBite</span>
+      </a>
+      <div class="header-right">
+        <label class="lang-switch" data-i18n-attr="aria-label:lang.label" aria-label="Language">
+          <svg class="lang-globe" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M3 12h18M12 3c2.5 2.5 2.5 16 0 18M12 3c-2.5 2.5-2.5 16 0 18" stroke="currentColor" stroke-width="1.7"/></svg>
+          <select id="langSelect"><option value="en">EN</option><option value="de">DE</option><option value="ar">AR</option></select>
+        </label>
+        <a class="btn-upgrade" href="/" data-i18n="nav.app">Open app</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="container">
+      <section class="hero">
+        <h1 data-i18n="pricing.title">Simple, honest pricing</h1>
+        <p class="hero-sub" data-i18n="pricing.sub">Start free. Upgrade when you need more power. Cancel anytime.</p>
+      </section>
+
+      <div class="bill-toggle" role="group" aria-label="Billing period">
+        <button class="bill-opt is-active" id="billMonthly" data-i18n="pricing.monthly">Monthly</button>
+        <button class="bill-opt" id="billYearly" data-i18n="pricing.yearly">Yearly</button>
+        <span class="bill-save" data-i18n="pricing.save2">2 months free</span>
+      </div>
+
+      <div class="plans">
+        <section class="plan glass-card">
+          <h2 class="plan-name" data-i18n="pricing.freeName">Free</h2>
+          <div class="plan-price"><span data-i18n="pricing.freePrice">€0</span></div>
+          <ul class="plan-features" id="freeFeatures"></ul>
+          <a class="btn btn-ghost plan-cta" href="/" data-i18n="pricing.freeCta">Use it now</a>
+        </section>
+
+        <section class="plan glass-card popular">
+          <h2 class="plan-name" data-i18n="pricing.proName">Pro</h2>
+          <div class="plan-price"><span id="proPrice">€9</span><span class="plan-period" id="proPeriod" data-i18n="pricing.perMonth">/mo</span></div>
+          <ul class="plan-features" id="proFeatures"></ul>
+          <button class="btn btn-primary plan-cta" id="proCta" data-i18n="pricing.proCta">Go Pro</button>
+        </section>
+      </div>
+
+      <p class="pricing-note" data-i18n="pricing.guarantee">Test mode: use Stripe card 4242 4242 4242 4242.</p>
+    </div>
+  </main>
+
+  <div class="toast-container" id="toasts"></div>
+
+  <script>
+    (function () {
+      "use strict";
+      var t = function (k, v) { return window.I18N ? window.I18N.t(k, v) : k; };
+      var sel = document.getElementById("langSelect");
+      if (sel && window.I18N) { sel.value = window.I18N.getLang(); sel.addEventListener("change", function () { window.I18N.setLang(sel.value); }); }
+
+      var FREE = [["fLocal", null], ["fImages", 5], ["fSize", 5], ["fSingle", null]];
+      var PRO = [["fImages", 500], ["fSize", 50], ["fBatch", 20], ["fPriority", null], ["fApikey", null]];
+      var CHECK = '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+      function renderFeatures(el, list) {
+        el.innerHTML = "";
+        list.forEach(function (f) {
+          var li = document.createElement("li");
+          li.innerHTML = CHECK + "<span></span>";
+          li.querySelector("span").textContent = f[1] == null ? t("pricing." + f[0]) : t("pricing." + f[0], { n: f[1] });
+          el.appendChild(li);
+        });
+      }
+      function renderAll() {
+        renderFeatures(document.getElementById("freeFeatures"), FREE);
+        renderFeatures(document.getElementById("proFeatures"), PRO);
+      }
+      renderAll();
+      if (window.I18N) window.I18N.onChange(renderAll);
+
+      // Monthly / yearly toggle
+      var plan = "monthly";
+      var bm = document.getElementById("billMonthly"), by = document.getElementById("billYearly");
+      var price = document.getElementById("proPrice"), period = document.getElementById("proPeriod");
+      function setPlan(p) {
+        plan = p;
+        bm.classList.toggle("is-active", p === "monthly");
+        by.classList.toggle("is-active", p === "yearly");
+        price.textContent = p === "yearly" ? "€90" : "€9";
+        period.setAttribute("data-i18n", p === "yearly" ? "pricing.perYear" : "pricing.perMonth");
+        period.textContent = t(p === "yearly" ? "pricing.perYear" : "pricing.perMonth");
+      }
+      bm.addEventListener("click", function () { setPlan("monthly"); });
+      by.addEventListener("click", function () { setPlan("yearly"); });
+
+      // Checkout availability
+      var cta = document.getElementById("proCta");
+      fetch("/api/config").then(function (r) { return r.json(); }).then(function (c) {
+        if (!c || !c.billing) {
+          cta.disabled = true;
+          cta.textContent = t("pricing.comingSoon");
+          if (window.I18N) window.I18N.onChange(function () { if (cta.disabled) cta.textContent = t("pricing.comingSoon"); });
+        }
+      }).catch(function () { /* offline/static: leave CTA, it will 503 */ });
+
+      cta.addEventListener("click", function () {
+        if (cta.disabled) return;
+        cta.disabled = true;
+        fetch("/api/checkout", {
+          method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ plan: plan }),
+        }).then(function (r) { return r.json(); }).then(function (d) {
+          if (d && d.url) location.href = d.url; else { cta.disabled = false; cta.textContent = t("pricing.comingSoon"); }
+        }).catch(function () { cta.disabled = false; });
+      });
+    })();
+  </script>
+</body>
+</html>

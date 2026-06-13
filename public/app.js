@@ -12,6 +12,8 @@
   let processing = false;
   let serverAvailable = false;
   let serverChecked = false;
+  let apiKey = "";
+  let tierState = { tier: "free", remaining: null };
 
   // ═══ DOM ═══
   const $ = (s) => document.querySelector(s);
@@ -38,6 +40,14 @@
   const tierLabel = $("#tierLabel");
   const remainingLabel = $("#remainingLabel");
   const langSelect = $("#langSelect");
+  const btnUpgrade = $("#btnUpgrade");
+  const btnAccount = $("#btnAccount");
+  const accountModal = $("#accountModal");
+  const accClose = $("#accClose");
+  const accKeyInput = $("#accKeyInput");
+  const accSave = $("#accSave");
+  const accClear = $("#accClear");
+  const accStatus = $("#accStatus");
 
   // i18n shortcuts
   const t = (k, v) => (window.I18N ? window.I18N.t(k, v) : k);
@@ -47,6 +57,9 @@
   document.addEventListener("DOMContentLoaded", init);
 
   function init() {
+    // Restore stored Pro key
+    try { apiKey = localStorage.getItem("bunbite_api_key") || ""; } catch { apiKey = ""; }
+
     // Check if server API is available
     checkServer();
 
@@ -85,6 +98,14 @@
       window.I18N.onChange(onLangChange);
     }
 
+    // Account modal
+    if (btnAccount) btnAccount.addEventListener("click", openAccount);
+    if (accClose) accClose.addEventListener("click", closeAccount);
+    if (accountModal) accountModal.addEventListener("click", (e) => { if (e.target === accountModal) closeAccount(); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && accountModal && !accountModal.hidden) closeAccount(); });
+    if (accSave) accSave.addEventListener("click", saveKey);
+    if (accClear) accClear.addEventListener("click", removeKey);
+
     // Initial chrome (badge + tier + process button) in the active language
     renderChrome();
   }
@@ -106,17 +127,77 @@
       engineBadge.textContent = t("badge.client");
       engineBadge.className = "badge client";
     }
-    // Tier pill (real quota wired in Wave 2; client mode = unlimited local)
-    tierLabel.textContent = t("tier.free");
-    remainingLabel.textContent = t("tier.unlimited");
+    // Tier pill from known server status, else local default (client mode = unlimited)
+    const isPro = tierState.tier === "pro";
+    tierLabel.textContent = isPro ? t("tier.pro") : t("tier.free");
+    remainingLabel.textContent = tierState.remaining == null ? t("tier.unlimited") : nfmt(tierState.remaining);
+    if (btnUpgrade) btnUpgrade.hidden = isPro;
     // Process button (only when idle; processing state owns it during a run)
     if (!processing) btnProcess.innerHTML = processBtnLabel();
   }
 
   function onLangChange() {
     renderChrome();
+    renderAccountStatus();
     if (queue.length) renderQueue();
     if (results.length) renderResults();
+  }
+
+  // ═══ ACCOUNT / PRO KEY ═══
+  async function refreshStatus() {
+    if (!serverAvailable) return; // client mode has no server tier
+    try {
+      const res = await fetch("/api/status", { headers: apiKey ? { "X-API-Key": apiKey } : {} });
+      if (!res.ok) return;
+      const s = await res.json();
+      tierState = {
+        tier: s.tier === "pro" ? "pro" : "free",
+        remaining: typeof s.remaining === "number" ? s.remaining : null,
+      };
+      renderChrome();
+      renderAccountStatus();
+    } catch { /* keep current state */ }
+  }
+
+  function renderAccountStatus() {
+    if (!accStatus) return;
+    const isPro = tierState.tier === "pro";
+    accStatus.textContent = isPro ? t("account.activePro") : t("account.free");
+    accStatus.className = "acc-status " + (isPro ? "pro" : "free");
+  }
+
+  function openAccount() {
+    if (!accountModal) return;
+    accKeyInput.value = apiKey || "";
+    renderAccountStatus();
+    accountModal.hidden = false;
+    setTimeout(() => accKeyInput.focus(), 30);
+  }
+  function closeAccount() { if (accountModal) accountModal.hidden = true; }
+
+  async function saveKey() {
+    const k = (accKeyInput.value || "").trim();
+    if (!k) { removeKey(); return; }
+    apiKey = k;
+    try { localStorage.setItem("bunbite_api_key", k); } catch { /* ignore */ }
+    if (serverAvailable) {
+      await refreshStatus();
+      if (tierState.tier === "pro") { toast(t("account.saved"), "ok"); closeAccount(); }
+      else toast(t("account.invalid"), "err");
+    } else {
+      toast(t("account.saved"), "ok"); // stored; validated once a server is reachable
+      closeAccount();
+    }
+  }
+
+  function removeKey() {
+    apiKey = "";
+    try { localStorage.removeItem("bunbite_api_key"); } catch { /* ignore */ }
+    if (accKeyInput) accKeyInput.value = "";
+    if (serverAvailable) refreshStatus();
+    else { tierState = { tier: "free", remaining: null }; renderChrome(); }
+    renderAccountStatus();
+    toast(t("account.cleared"), "ok");
   }
 
   // ═══ SERVER DETECTION ═══
@@ -127,6 +208,7 @@
         serverAvailable = true;
         serverChecked = true;
         renderChrome();
+        refreshStatus();
         toast(t("toast.serverDetected"), "ok");
       } else {
         setClientMode();
@@ -226,6 +308,7 @@
 
     if (results.length) renderResults();
     toast(t("toast.optimized", { count: results.length }), "ok");
+    if (serverAvailable) refreshStatus(); // refresh remaining quota after a server run
   }
 
   async function processImage(item) {
@@ -378,7 +461,10 @@
     form.append("withoutEnlargement", opts.noUpscale ? "true" : "false");
     form.append("progressive", opts.progressive ? "true" : "false");
 
-    const res = await fetch("/api/optimize", { method: "POST", body: form });
+    const res = await fetch("/api/optimize", {
+      method: "POST", body: form,
+      headers: apiKey ? { "X-API-Key": apiKey } : undefined,
+    });
     if (!res.ok) {
       const data = await res.json().catch(() => ({ error: "Server error" }));
       throw new Error(data.error || "Server processing failed");

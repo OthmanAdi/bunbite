@@ -1,0 +1,45 @@
+# BunBite — Fly.io config.
+# SQLite lives on a single mounted volume, so this app runs as ONE machine.
+# Do not scale horizontally (multiple machines would each get a separate empty
+# volume = split brain). Deploy with: fly deploy --ha=false
+app = "bunbite"
+primary_region = "fra" # Frankfurt: close to the EU/Germany audience
+
+[build]
+
+[env]
+  PORT = "3000"
+  DB_PATH = "/data/bunbite.sqlite"
+  # Must match the real app URL. If the app name "bunbite" is taken and Fly
+  # assigns another, update this to https://<your-app>.fly.dev and redeploy.
+  PUBLIC_BASE_URL = "https://bunbite.fly.dev"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1 # keep the single SQLite machine always up
+
+  [http_service.concurrency]
+    type = "requests"
+    hard_limit = 250
+    soft_limit = 200
+
+[[mounts]]
+  source = "bunbite_data"
+  destination = "/data"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+
+[checks]
+  [checks.health]
+    type = "http"
+    port = 3000
+    method = "GET"
+    path = "/api/health"
+    interval = "15s"
+    timeout = "3s"
+    grace_period = "10s"

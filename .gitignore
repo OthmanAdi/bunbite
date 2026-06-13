@@ -40,3 +40,12 @@ temp/
 # Local config
 .herenow/
 .heremes/
+
+# Agent working memory (planning-with-files)
+.planning/
+
+# SQLite (durable store lives on Fly volume, not in repo)
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+data/

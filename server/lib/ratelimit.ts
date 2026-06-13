@@ -1,61 +1,61 @@
-interface RateEntry { count: number; windowStart: number; }
+/**
+ * BunBite — durable rate limiting + tier resolution (SQLite-backed).
+ * Free tier is tracked per IP; Pro per validated key. Survives restart and is
+ * correct across redeploys (no in-memory state). Replaces the old in-memory Map
+ * and the "any key longer than 10 chars = Pro" bug.
+ */
+import { isActivePro, getUsage, incrementUsage } from "./db";
 
-interface RateLimitConfig {
+export interface RateLimitConfig {
   maxRequestsPerDay: number;
   maxFileSizeBytes: number;
   batchEnabled: boolean;
   maxBatchSize: number;
 }
 
-const FREE: RateLimitConfig = { maxRequestsPerDay: 5, maxFileSizeBytes: 5 * 1048576, batchEnabled: false, maxBatchSize: 1 };
-const PRO: RateLimitConfig = { maxRequestsPerDay: 500, maxFileSizeBytes: 50 * 1048576, batchEnabled: true, maxBatchSize: 20 };
+export const FREE: RateLimitConfig = {
+  maxRequestsPerDay: 5, maxFileSizeBytes: 5 * 1048576, batchEnabled: false, maxBatchSize: 1,
+};
+export const PRO: RateLimitConfig = {
+  maxRequestsPerDay: 500, maxFileSizeBytes: 50 * 1048576, batchEnabled: true, maxBatchSize: 20,
+};
 
-export class RateLimiter {
-  private store = new Map<string, RateEntry>();
-  private timer: ReturnType<typeof setInterval>;
+export type Tier = "free" | "pro";
 
-  constructor() {
-    this.timer = setInterval(() => {
-      const now = Date.now();
-      const day = 86400000;
-      const keys = Array.from(this.store.keys());
-      for (const key of keys) {
-        const entry = this.store.get(key)!;
-        if (now - entry.windowStart > day) this.store.delete(key);
-      }
-    }, 600000);
+export interface Access {
+  tier: Tier;
+  config: RateLimitConfig;
+  subject: string; // usage bucket: "key:<k>" for pro, "ip:<addr>" for free
+  apiKey?: string;
+}
+
+/** Resolve the caller's tier from a (validated) key, else fall back to free-by-IP. */
+export function resolveAccess(apiKey: string | undefined | null, ip: string): Access {
+  if (apiKey && isActivePro(apiKey)) {
+    return { tier: "pro", config: PRO, subject: `key:${apiKey}`, apiKey };
   }
+  return { tier: "free", config: FREE, subject: `ip:${ip}`, apiKey: apiKey || undefined };
+}
 
-  private key(ip: string) { return `${ip}:${new Date().toISOString().slice(0, 10)}`; }
+function nextUtcMidnight(): string {
+  const d = new Date();
+  d.setUTCHours(24, 0, 0, 0);
+  return d.toISOString();
+}
 
-  getConfigWithKey(apiKey?: string): RateLimitConfig {
-    return (apiKey && apiKey.length > 10) ? PRO : FREE;
-  }
+export interface LimitResult { allowed: boolean; remaining: number; resetAt: string; }
 
-  check(ip: string, config: RateLimitConfig) {
-    const k = this.key(ip);
-    const entry = this.store.get(k);
-    const now = Date.now();
-    if (!entry || now - entry.windowStart > 86400000) {
-      this.store.set(k, { count: 0, windowStart: now });
-      return { allowed: true, remaining: config.maxRequestsPerDay, resetAt: new Date(now + 86400000).toISOString() };
-    }
-    if (entry.count >= config.maxRequestsPerDay) {
-      return { allowed: false, remaining: 0, resetAt: new Date(entry.windowStart + 86400000).toISOString() };
-    }
-    return { allowed: true, remaining: config.maxRequestsPerDay - entry.count, resetAt: new Date(entry.windowStart + 86400000).toISOString() };
-  }
+export function check(subject: string, config: RateLimitConfig): LimitResult {
+  const used = getUsage(subject);
+  const resetAt = nextUtcMidnight();
+  if (used >= config.maxRequestsPerDay) return { allowed: false, remaining: 0, resetAt };
+  return { allowed: true, remaining: config.maxRequestsPerDay - used, resetAt };
+}
 
-  increment(ip: string) {
-    const k = this.key(ip);
-    const e = this.store.get(k);
-    if (e) e.count++; else this.store.set(k, { count: 1, windowStart: Date.now() });
-  }
+export function increment(subject: string): void {
+  incrementUsage(subject);
+}
 
-  getRemaining(ip: string, config: RateLimitConfig) {
-    const e = this.store.get(this.key(ip));
-    return e ? Math.max(0, config.maxRequestsPerDay - e.count) : config.maxRequestsPerDay;
-  }
-
-  destroy() { clearInterval(this.timer); }
+export function getRemaining(subject: string, config: RateLimitConfig): number {
+  return Math.max(0, config.maxRequestsPerDay - getUsage(subject));
 }

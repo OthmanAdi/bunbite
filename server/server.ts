@@ -1,8 +1,8 @@
 import { optimizeImage, optimizeBatch } from "./lib/optimizer";
-import { RateLimiter } from "./lib/ratelimit";
+import { resolveAccess, check, increment, getRemaining } from "./lib/ratelimit";
+import { touchApiKey } from "./lib/db";
 
 const PORT = Number(process.env.PORT) || 3000;
-const rateLimiter = new RateLimiter();
 
 function getClientIP(req: Request): string {
   return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
@@ -63,8 +63,8 @@ const server = Bun.serve({
 
 async function handleOptimize(req: Request, ip: string): Promise<Response> {
   const apiKey = req.headers.get("x-api-key") || undefined;
-  const config = rateLimiter.getConfigWithKey(apiKey);
-  const limit = rateLimiter.check(ip, config);
+  const { tier, config, subject } = resolveAccess(apiKey, ip);
+  const limit = check(subject, config);
 
   if (!limit.allowed) {
     return err(`Rate limit exceeded. Resets at ${limit.resetAt}.`, 429);
@@ -96,7 +96,8 @@ async function handleOptimize(req: Request, ip: string): Promise<Response> {
       quality, width, height, fit, withoutEnlargement, progressive,
     });
 
-    rateLimiter.increment(ip);
+    increment(subject);
+    if (tier === "pro" && apiKey) touchApiKey(apiKey);
 
     return new Response(result.data, {
       headers: {
@@ -110,7 +111,7 @@ async function handleOptimize(req: Request, ip: string): Promise<Response> {
         "X-Height": String(result.height),
         "X-Original-Width": String(result.originalWidth),
         "X-Original-Height": String(result.originalHeight),
-        "X-Remaining": String(rateLimiter.getRemaining(ip, config)),
+        "X-Remaining": String(getRemaining(subject, config)),
         "X-Engine": "bun-image",
       },
     });
@@ -122,10 +123,10 @@ async function handleOptimize(req: Request, ip: string): Promise<Response> {
 
 async function handleBatch(req: Request, ip: string): Promise<Response> {
   const apiKey = req.headers.get("x-api-key") || undefined;
-  const config = rateLimiter.getConfigWithKey(apiKey);
+  const { tier, config, subject } = resolveAccess(apiKey, ip);
   if (!config.batchEnabled) return err("Batch requires Pro tier.", 403);
 
-  const limit = rateLimiter.check(ip, config);
+  const limit = check(subject, config);
   if (!limit.allowed) return err(`Rate limit exceeded. Resets at ${limit.resetAt}.`, 429);
 
   try {
@@ -146,7 +147,8 @@ async function handleBatch(req: Request, ip: string): Promise<Response> {
     if (files.length === 0) return err("No image files provided.");
 
     const { results, errors } = await optimizeBatch(files, { format, quality, width, height }, config.maxBatchSize);
-    for (let i = 0; i < results.length; i++) rateLimiter.increment(ip);
+    for (let i = 0; i < results.length; i++) increment(subject);
+    if (tier === "pro" && apiKey) touchApiKey(apiKey);
 
     return json({
       results: results.map(r => ({
@@ -155,7 +157,7 @@ async function handleBatch(req: Request, ip: string): Promise<Response> {
         format: r.format, data: Buffer.from(r.data).toString("base64"), mimeType: r.mimeType,
       })),
       errors,
-      remaining: rateLimiter.getRemaining(ip, config),
+      remaining: getRemaining(subject, config),
     });
   } catch (e: any) {
     console.error("Batch error:", e);
@@ -165,10 +167,10 @@ async function handleBatch(req: Request, ip: string): Promise<Response> {
 
 function handleStatus(ip: string, req: Request): Response {
   const apiKey = req.headers.get("x-api-key") || undefined;
-  const config = rateLimiter.getConfigWithKey(apiKey);
+  const { tier, config, subject } = resolveAccess(apiKey, ip);
   return json({
-    tier: apiKey ? "pro" : "free",
-    remaining: rateLimiter.getRemaining(ip, config),
+    tier,
+    remaining: getRemaining(subject, config),
     limit: config.maxRequestsPerDay,
     maxFileSizeMB: config.maxFileSizeBytes / 1048576,
     batchEnabled: config.batchEnabled,

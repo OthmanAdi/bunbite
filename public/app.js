@@ -500,9 +500,7 @@
     el.textContent = msg;
     toasts.appendChild(el);
     setTimeout(() => {
-      el.style.opacity = "0";
-      el.style.transform = "translateX(80px)";
-      el.style.transition = "all .3s";
+      el.classList.add("toast-hide"); // exit animation is CSS-driven so it mirrors in RTL
       setTimeout(() => el.remove(), 300);
     }, 3500);
   }

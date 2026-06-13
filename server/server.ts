@@ -1,6 +1,10 @@
 import { optimizeImage, optimizeBatch } from "./lib/optimizer";
 import { resolveAccess, check, increment, getRemaining } from "./lib/ratelimit";
 import { touchApiKey } from "./lib/db";
+import {
+  billingConfigured, webhookConfigured, createCheckoutSession,
+  retrieveSessionKey, verifyWebhook, handleEvent,
+} from "./lib/billing";
 
 const PORT = Number(process.env.PORT) || 3000;
 
@@ -55,6 +59,18 @@ const server = Bun.serve({
     }
     if (url.pathname === "/api/health") {
       return json({ status: "ok", engine: "bun-image", version: "1.0.0" });
+    }
+    if (url.pathname === "/api/config" && req.method === "GET") {
+      return json({ billing: billingConfigured() });
+    }
+    if (url.pathname === "/api/checkout" && req.method === "POST") {
+      return handleCheckout(req);
+    }
+    if (url.pathname === "/api/checkout/session" && req.method === "GET") {
+      return handleSessionLookup(url);
+    }
+    if (url.pathname === "/api/stripe/webhook" && req.method === "POST") {
+      return handleWebhook(req);
     }
 
     return serveStatic(url.pathname);
@@ -177,6 +193,41 @@ function handleStatus(ip: string, req: Request): Response {
     maxBatchSize: config.maxBatchSize,
     engine: "bun-image",
   });
+}
+
+async function handleCheckout(req: Request): Promise<Response> {
+  if (!billingConfigured()) return err("Billing is not configured yet.", 503);
+  try {
+    const body = (await req.json().catch(() => ({}))) as { plan?: string; email?: string };
+    const plan = body.plan === "yearly" ? "yearly" : "monthly";
+    const email = typeof body.email === "string" && body.email ? body.email : undefined;
+    const { url } = await createCheckoutSession(plan, email);
+    return json({ url });
+  } catch (e: any) {
+    return err(e.message || "Checkout failed", 500);
+  }
+}
+
+async function handleSessionLookup(url: URL): Promise<Response> {
+  if (!billingConfigured()) return err("Billing is not configured yet.", 503);
+  const sessionId = url.searchParams.get("session_id");
+  if (!sessionId) return err("Missing session_id");
+  try {
+    const result = await retrieveSessionKey(sessionId);
+    if (!result) return json({ status: "pending" }, 202);
+    return json({ status: "paid", key: result.key, tier: result.tier });
+  } catch (e: any) {
+    return err(e.message || "Lookup failed", 500);
+  }
+}
+
+async function handleWebhook(req: Request): Promise<Response> {
+  if (!webhookConfigured()) return new Response("not configured", { status: 503 });
+  const raw = await req.text(); // exact raw body required for signature verification
+  const event = verifyWebhook(raw, req.headers.get("stripe-signature"));
+  if (!event) return new Response("invalid signature", { status: 400 });
+  try { handleEvent(event); } catch (e) { console.error("Webhook handling error:", e); }
+  return new Response("ok", { status: 200 }); // 200 even for unhandled types so Stripe stops retrying
 }
 
 async function serveStatic(pathname: string): Promise<Response> {

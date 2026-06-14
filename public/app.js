@@ -77,6 +77,9 @@
 
     // Paste support
     document.addEventListener("paste", (e) => {
+      if (accountModal && !accountModal.hidden) return; // don't capture pastes behind the modal
+      const tgt = e.target;
+      if (tgt && (tgt.tagName === "INPUT" || tgt.tagName === "TEXTAREA" || tgt.isContentEditable)) return;
       const items = e.clipboardData?.items;
       if (!items) return;
       const imgs = [];

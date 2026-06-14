@@ -567,7 +567,10 @@
   // ═══ CLEAR ═══
   function clearAll() {
     for (const q of queue) URL.revokeObjectURL(q.preview);
-    for (const r of results) { if (r.downloadUrl) URL.revokeObjectURL(r.downloadUrl); }
+    for (const r of results) {
+      if (r.downloadUrl) URL.revokeObjectURL(r.downloadUrl);
+      if (r.previewUrl && r.previewUrl.startsWith("blob:")) URL.revokeObjectURL(r.previewUrl); // server-mode preview leak
+    }
     queue.length = 0;
     results.length = 0;
     queueSection.hidden = true;

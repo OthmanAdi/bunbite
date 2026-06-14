@@ -21,6 +21,7 @@ function json(data: unknown, status = 200): Response {
       "Content-Type": "application/json",
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Headers": "Content-Type, X-API-Key",
+      "X-Content-Type-Options": "nosniff",
     },
   });
 }
@@ -86,6 +87,12 @@ async function handleOptimize(req: Request, ip: string): Promise<Response> {
     return err(`Rate limit exceeded. Resets at ${limit.resetAt}.`, 429);
   }
 
+  // Reject oversized uploads before buffering the body (memory/DoS guard).
+  const contentLength = Number(req.headers.get("content-length") || 0);
+  if (contentLength && contentLength > config.maxFileSizeBytes + 1_048_576) {
+    return err(`File too large. Max ${(config.maxFileSizeBytes / 1048576).toFixed(0)}MB.`, 413);
+  }
+
   try {
     const formData = await req.formData();
     const file = formData.get("image") as File | null;
@@ -144,6 +151,12 @@ async function handleBatch(req: Request, ip: string): Promise<Response> {
 
   const limit = check(subject, config);
   if (!limit.allowed) return err(`Rate limit exceeded. Resets at ${limit.resetAt}.`, 429);
+
+  // Reject oversized batch payloads before buffering (memory/DoS guard).
+  const contentLength = Number(req.headers.get("content-length") || 0);
+  if (contentLength && contentLength > config.maxFileSizeBytes * config.maxBatchSize + 1_048_576) {
+    return err("Batch payload too large.", 413);
+  }
 
   try {
     const formData = await req.formData();

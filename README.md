@@ -52,7 +52,7 @@ npx serve public
 
 ![BunBite Studio Browser-Erweiterung mit lokaler Engine und optionalem Hosted-Modus](docs/screenshots/extension-studio.png)
 
-Die Chromium-Erweiterung wird als getrenntes Distributionsartefakt gepflegt. Sie verarbeitet Bilder standardmäßig lokal und fordert Hosted-Zugriff nur für den festgelegten BunBite-Ursprung an. Quellcode, Store-Eintrag und Installationshinweise gehören in das separate Erweiterungs-Repository. Dieses Web-Repository behauptet weder einen veröffentlichten Store-Eintrag noch eine signierte Erweiterungsveröffentlichung.
+Die Chromium-Erweiterung wird als getrenntes Distributionsartefakt gepflegt. Sie verarbeitet Bilder standardmäßig lokal und fordert Hosted-Zugriff nur für den festgelegten BunBite-Ursprung an. Quellcode, geprüftes Entwicklerpaket und manuelle Installationshinweise stehen im separaten Repository [BunBite Studio](https://github.com/OthmanAdi/bunbite-extension). Dieses Web-Repository behauptet weder einen veröffentlichten Store-Eintrag noch eine signierte Erweiterungsveröffentlichung.
 
 ## Datenschutzmodell
 

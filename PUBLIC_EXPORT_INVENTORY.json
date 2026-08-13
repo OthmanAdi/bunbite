@@ -1,9 +1,9 @@
 {
   "schemaVersion": "bunbite-public-export/v1",
   "target": "web",
-  "generatedAt": "2026-08-13T10:35:39Z",
+  "generatedAt": "2026-08-13T10:54:47Z",
   "fileCount": 45,
-  "totalBytes": 1705164,
+  "totalBytes": 1705233,
   "files": [
     {
       "path": ".dockerignore",
@@ -157,8 +157,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 5848,
-      "sha256": "d12df3d8f4558e812e6b5c895271e0f8097225745efbaaaf2e9b32d7f503ee53"
+      "bytes": 5917,
+      "sha256": "36046ce38a75cea3d86735804d13593cb51f558b553662822f546ebe55314151"
     },
     {
       "path": "SCALING.md",

@@ -1,107 +1,195 @@
 <!DOCTYPE html>
-<html lang="en">
+<!--
+GMIRA SURFACE CONTRACT: public-web
+THESIS: An image leaves with less weight and no mystery; BunBite shows the transformation before the file enters the queue.
+OWN-WORLD: Latent, a software darkroom with near-black surfaces, indigo developing light, ordered dither, contact-sheet telemetry, and a visible latent-to-developed TELL.
+STORY: Identify the object and developed state, set constraints, accept images, report each transformation, then end with measured savings and downloads.
+FIRST VIEWPORT: Brand, privacy status, utilities, headline, caption, format legend, comparison plate, output controls, and upload chamber.
+FORM: One bounded 1040 px workbench; paired copy and comparison on desktop, one exact column on tablet and phone, with status in reserved flow space.
+-->
+<html lang="de">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BunBite — Image Optimization</title>
-  <meta name="description" content="Lightning-fast image optimization. Convert, compress, and resize images in your browser.">
+  <title>BunBite Bildoptimierung: WebP, JPEG und PNG im Browser</title>
+  <meta name="description" content="Bilder kostenlos im Browser komprimieren, konvertieren und verkleinern. WebP, JPEG und PNG, lokale Verarbeitung und separate Chromium-Erweiterung.">
+  <meta name="theme-color" content="#0A0A0F">
+  <!-- runtime-origin-metadata -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="BunBite">
+  <meta property="og:title" content="BunBite Bildoptimierung für WebP, JPEG und PNG">
+  <meta property="og:description" content="Bilder lokal im Browser komprimieren und konvertieren. Optionaler Hosted-Modus, separate Chromium-Erweiterung und Datenschutz zuerst.">
+  <meta property="og:image" content="/og.png">
+  <meta property="og:image:alt" content="BunBite Bildoptimierung mit lokaler Browser-Verarbeitung und WebP-Ausgabe">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="BunBite Bildoptimierung im Browser">
+  <meta name="twitter:description" content="WebP, JPEG und PNG lokal komprimieren, konvertieren und verkleinern. Optionaler Hosted-Modus, keine AVIF-Ausgabe.">
+  <meta name="twitter:image" content="/og.png">
+  <meta name="twitter:image:alt" content="BunBite Oberfläche für private Bildoptimierung im Browser">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Arabic:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/style.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%236366f1'/><text x='16' y='23' text-anchor='middle' fill='white' font-size='18' font-weight='bold'>B</text></svg>">
-  <script src="/i18n.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css?v=8">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='f' x1='0' y1='0' x2='32' y2='32'><stop stop-color='%236366f1'/><stop offset='1' stop-color='%23a855f7'/></linearGradient></defs><rect width='32' height='32' rx='7' fill='url(%23f)'/><path d='M8 22L14 14L18 18L22 12L26 22' stroke='white' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "BunBite",
+    "applicationCategory": "MultimediaApplication",
+    "operatingSystem": "Web",
+    "description": "Kostenlose Bildoptimierung für WebP, JPEG und PNG mit lokaler Browser-Verarbeitung, optionaler Hosted-Engine und separater Chromium-Erweiterung.",
+    "inLanguage": ["de", "en", "ar"],
+    "featureList": ["Lokale Bildkomprimierung", "WebP-Konvertierung", "JPEG- und PNG-Ausgabe", "Stapelverarbeitung", "Chromium-Browser-Erweiterung"]
+  }
+  </script>
+  <script>/* FOUC guard: stamp lang/dir before paint; keep in sync with detectLang() in i18n.js */
+  (function(){var S=["de","en","ar"],l=null;try{l=new URLSearchParams(location.search).get("lang")}catch(e){}if(!(l&&S.indexOf(l)>-1)){try{l=localStorage.getItem("bunbite_lang")}catch(e){}}if(!(l&&S.indexOf(l)>-1)){l="de"}var d=document.documentElement;d.setAttribute("lang",l);d.setAttribute("dir",l==="ar"?"rtl":"ltr")})();</script>
+  <script src="/i18n.js?v=7" defer></script>
 </head>
 <body>
-  <div class="bg-gradient"></div>
-  <div class="bg-grid"></div>
+  <div class="bg-wash"></div>
+  <div class="grain"></div>
 
   <header class="header">
-    <div class="container">
-      <div class="logo">
+    <div class="container header-inner">
+      <a class="logo" href="/">
         <div class="logo-icon">
           <svg viewBox="0 0 32 32" fill="none">
-            <rect x="2" y="2" width="28" height="28" rx="6" stroke="url(#g1)" stroke-width="2.5"/>
+            <rect x="2" y="2" width="28" height="28" rx="7" stroke="url(#g1)" stroke-width="2.5"/>
             <path d="M8 22L14 14L18 18L22 12L26 22" stroke="url(#g1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             <circle cx="12" cy="10" r="2.5" fill="url(#g1)"/>
-            <defs><linearGradient id="g1" x1="0" y1="0" x2="32" y2="32"><stop stop-color="#6366f1"/><stop offset="1" stop-color="#a855f7"/></linearGradient></defs>
+            <defs><linearGradient id="g1" x1="0" y1="0" x2="32" y2="32"><stop style="stop-color:var(--primary)"/><stop offset="1" style="stop-color:var(--secondary)"/></linearGradient></defs>
           </svg>
         </div>
         <span class="logo-text">BunBite</span>
-        <span class="badge" id="engineBadge" data-i18n="badge.detecting">Detecting…</span>
-      </div>
-      <div class="header-right">
-        <a class="btn-upgrade" id="btnUpgrade" href="/pricing.html" data-i18n="nav.upgrade">Upgrade</a>
-        <button class="icon-btn" id="btnAccount" data-i18n-attr="aria-label:account.open" aria-label="Account">
-          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M14 7a4 4 0 11-5.66 0M21 21l-4-4m4-9a3 3 0 11-6 0 3 3 0 016 0z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="9" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M4 19a5 5 0 0110 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-        </button>
-        <label class="lang-switch" data-i18n-attr="aria-label:lang.label" aria-label="Language">
-          <svg class="lang-globe" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M3 12h18M12 3c2.5 2.5 2.5 16 0 18M12 3c-2.5 2.5-2.5 16 0 18" stroke="currentColor" stroke-width="1.7"/></svg>
-          <select id="langSelect">
-            <option value="en">EN</option>
+        <span class="badge" id="engineBadge" data-i18n="badge.detecting">Wird erkannt…</span>
+      </a>
+      <nav class="header-right" data-i18n-attr="aria-label:nav.label" aria-label="Seitennavigation">
+        <div class="lang" data-lang-switch data-i18n-attr="aria-label:lang.label" aria-label="Sprache">
+          <select id="langSelect" data-i18n-attr="aria-label:lang.label" aria-label="Sprache">
             <option value="de">DE</option>
+            <option value="en">EN</option>
             <option value="ar">AR</option>
           </select>
-        </label>
-        <div class="tier-pill" id="tierPill">
-          <span class="tier-dot"></span>
-          <span id="tierLabel">Free</span>
-          <span class="tier-sep">·</span>
-          <span id="remainingLabel">∞</span>
         </div>
-      </div>
+        <div class="mode-pill" id="modePill">
+          <span class="mode-dot"></span>
+          <span id="modeLabel" data-i18n="mode.local">Browser</span>
+          <span class="mode-sep">·</span>
+          <span id="modeDetail" data-i18n="mode.private">Privat</span>
+        </div>
+      </nav>
     </div>
   </header>
 
   <main class="main">
     <div class="container">
 
-      <section class="hero">
-        <h1 data-i18n-html="hero.titleHtml">Optimize images at <span class="gradient-text">lightning speed</span></h1>
-        <p class="hero-sub" data-i18n="hero.sub">Convert, compress, and resize images instantly, right in your browser. Your images never leave your device.</p>
+      <section class="hero-bay">
+        <div class="hero-copy">
+          <p class="kicker"><span class="kicker-dot"></span><span data-i18n="hero.eyebrow">Standardmäßig privat · läuft im Browser</span></p>
+          <h1 data-i18n-html="hero.titleHtml">Bilder <span class="gradient-text">in Sekunden</span> optimieren</h1>
+          <p class="hero-sub" data-i18n="hero.sub">Bilder in Sekunden konvertieren, komprimieren und skalieren.</p>
+          <div class="spec-strip">
+            <span class="spec-chip">WEBP</span><span class="spec-chip">JPEG</span><span class="spec-chip">PNG</span>
+            <span class="spec-rule"></span>
+            <span class="spec-meta">EN · DE · AR</span>
+          </div>
+        </div>
+
+        <figure class="bay" data-i18n-attr="aria-label:demo.bayLabel" aria-label="Vorher-Nachher-Vorschau, zum Entwickeln ziehen">
+          <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+            <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#161335"/><stop offset=".5" stop-color="#3a2a63"/>
+              <stop offset=".79" style="stop-color:var(--primary)"/><stop offset="1" style="stop-color:var(--secondary)"/>
+            </linearGradient>
+            <radialGradient id="glow" cx=".7" cy=".72" r=".24">
+              <stop offset="0" style="stop-color:var(--primary-bright)"/><stop offset=".5" style="stop-color:var(--primary);stop-opacity:.7"/><stop offset="1" style="stop-color:var(--primary);stop-opacity:0"/>
+            </radialGradient>
+          </defs></svg>
+          <div class="bay-shot" id="bayCompare">
+            <div class="bay-layer bay-dev">
+              <svg class="bay-scene" viewBox="0 0 480 320" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                <rect width="480" height="320" fill="url(#sky)"/><circle cx="336" cy="232" r="46" fill="url(#glow)"/><circle cx="336" cy="232" r="18" style="fill:var(--primary-bright)"/>
+                <path d="M0 250L90 210L170 240L250 200L330 236L420 205L480 232V320H0Z" fill="#2a2550"/><path d="M0 280L80 250L180 276L270 248L360 278L460 250L480 262V320H0Z" fill="#201b40" opacity=".92"/><path d="M0 300L120 286L240 300L360 286L480 300V320H0Z" fill="#14122c"/>
+              </svg>
+            </div>
+            <div class="bay-layer bay-lat">
+              <svg class="bay-scene" viewBox="0 0 480 320" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                <rect width="480" height="320" fill="url(#sky)"/><circle cx="336" cy="232" r="46" fill="url(#glow)"/><circle cx="336" cy="232" r="18" style="fill:var(--primary-bright)"/>
+                <path d="M0 250L90 210L170 240L250 200L330 236L420 205L480 232V320H0Z" fill="#2a2550"/><path d="M0 280L80 250L180 276L270 248L360 278L460 250L480 262V320H0Z" fill="#201b40" opacity=".92"/><path d="M0 300L120 286L240 300L360 286L480 300V320H0Z" fill="#14122c"/>
+              </svg>
+              <span class="bay-dither" aria-hidden="true"></span>
+            </div>
+            <div class="bay-divider" aria-hidden="true"></div>
+            <button class="bay-handle" id="bayHandle" type="button" role="slider" data-i18n-attr="aria-label:demo.developLabel" aria-label="Entwickeln" aria-valuemin="0" aria-valuemax="100" aria-valuenow="45" tabindex="0">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9.5 7L5 12l4.5 5M14.5 7l4.5 5-4.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <span class="bay-tag bay-tag-latent" data-i18n="demo.latent">Latent</span>
+            <span class="bay-tag bay-tag-dev" data-i18n="demo.developed">Entwickelt</span>
+          </div>
+          <span class="crop crop-tl"></span><span class="crop crop-tr"></span><span class="crop crop-bl"></span><span class="crop crop-br"></span>
+          <figcaption class="bay-readout">
+            <span class="bay-cap" data-i18n="demo.develop">Zum Entwickeln ziehen</span>
+            <span class="bay-bytes">149KB → 30KB</span>
+          </figcaption>
+        </figure>
       </section>
 
       <section class="controls glass-card">
+        <div class="panel-head"><span class="panel-tag">OUTPUT</span></div>
         <div class="controls-row">
           <div class="control">
             <label for="selFormat" data-i18n="controls.format">Format</label>
             <select id="selFormat">
-              <option value="webp" data-i18n="controls.optWebp">WebP (best compression)</option>
+              <option value="webp" data-i18n="controls.optWebp">WebP (beste Komprimierung)</option>
               <option value="jpeg" data-i18n="controls.optJpeg">JPEG</option>
               <option value="png" data-i18n="controls.optPng">PNG</option>
             </select>
           </div>
-          <div class="control control-wide">
-            <label for="rngQuality"><span data-i18n="controls.quality">Quality</span>: <strong id="valQuality">80</strong>%</label>
+          <div class="control">
+            <label for="rngQuality"><span data-i18n="controls.quality">Qualität</span>: <strong id="valQuality">80</strong>%</label>
             <input type="range" id="rngQuality" min="1" max="100" value="80">
           </div>
           <div class="control">
-            <label for="inpWidth" data-i18n="controls.maxWidth">Max Width</label>
+            <label for="inpWidth" data-i18n="controls.maxWidth">Max. Breite</label>
             <input type="number" id="inpWidth" data-i18n-attr="placeholder:controls.auto" placeholder="Auto" min="1" max="8192">
           </div>
           <div class="control">
-            <label for="inpHeight" data-i18n="controls.maxHeight">Max Height</label>
+            <label for="inpHeight" data-i18n="controls.maxHeight">Max. Höhe</label>
             <input type="number" id="inpHeight" data-i18n-attr="placeholder:controls.auto" placeholder="Auto" min="1" max="8192">
           </div>
         </div>
         <div class="controls-row toggles">
-          <label class="toggle"><input type="checkbox" id="chkNoUpscale" checked><span class="toggle-track"><span class="toggle-thumb"></span></span><span data-i18n="controls.noUpscale">Don't upscale</span></label>
-          <label class="toggle"><input type="checkbox" id="chkProgressive"><span class="toggle-track"><span class="toggle-thumb"></span></span><span data-i18n="controls.progressive">Progressive JPEG</span></label>
+          <label class="toggle"><input type="checkbox" id="chkNoUpscale" checked><span class="toggle-track"><span class="toggle-thumb"></span></span><span data-i18n="controls.noUpscale">Nicht vergrößern</span></label>
+          <label class="toggle"><input type="checkbox" id="chkProgressive"><span class="toggle-track"><span class="toggle-thumb"></span></span><span data-i18n="controls.progressive">Progressives JPEG</span></label>
         </div>
       </section>
 
-      <section class="drop-zone" id="dropZone">
+      <section class="drop-zone" id="dropZone" tabindex="0" role="button" data-i18n-attr="aria-label:drop.addLabel" aria-label="Bilder hinzufügen" aria-describedby="dropSub">
+        <span class="crop crop-tl"></span><span class="crop crop-tr"></span><span class="crop crop-bl"></span><span class="crop crop-br"></span>
         <div class="drop-inner">
-          <svg class="drop-icon" viewBox="0 0 48 48" fill="none"><path d="M24 32V12M24 12L16 20M24 12L32 20" stroke="url(#g2)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 32V38C8 39.1 8.9 40 10 40H38C39.1 40 40 39.1 40 38V32" stroke="url(#g2)" stroke-width="3" stroke-linecap="round"/><defs><linearGradient id="g2" x1="8" y1="12" x2="40" y2="40"><stop stop-color="#6366f1"/><stop offset="1" stop-color="#a855f7"/></linearGradient></defs></svg>
-          <h3 data-i18n="drop.title">Drop images here or click to browse</h3>
-          <p data-i18n="drop.sub">JPEG, PNG, WebP, BMP, GIF · Max 50MB per file</p>
+          <svg class="drop-icon" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+            <circle cx="24" cy="24" r="9" stroke="url(#g2)" stroke-width="2.4"/>
+            <path d="M24 6v8M24 34v8M6 24h8M34 24h8" stroke="url(#g2)" stroke-width="2.4" stroke-linecap="round"/>
+            <defs><linearGradient id="g2" x1="6" y1="6" x2="42" y2="42"><stop style="stop-color:var(--primary)"/><stop offset="1" style="stop-color:var(--secondary)"/></linearGradient></defs>
+          </svg>
+          <p class="drop-title" data-i18n="drop.title">Bilder hier ablegen oder zum Auswählen klicken</p>
+          <p id="dropSub" data-i18n="drop.sub">JPEG, PNG, WebP, BMP, GIF · große Dateien hängen vom Gerätespeicher ab</p>
         </div>
         <input type="file" id="fileInput" multiple accept="image/*" hidden>
       </section>
 
       <section class="queue" id="queueSection" hidden>
         <div class="section-head">
-          <h2><span data-i18n="queue.title">Queue</span> <span class="count" id="queueCount">0</span></h2>
+          <div>
+            <h2><span data-i18n="queue.title">Warteschlange</span> <span class="count" id="queueCount">0</span></h2>
+            <p class="entitlement-cue" id="entitlementCue" role="status"></p>
+          </div>
           <button class="btn btn-primary" id="btnProcess"></button>
         </div>
         <div class="queue-list" id="queueList"></div>
@@ -109,22 +197,44 @@
 
       <section class="results" id="resultsSection" hidden>
         <div class="section-head">
-          <h2 data-i18n="results.title">Results</h2>
+          <h2 data-i18n="results.title">Ergebnisse</h2>
           <div class="btn-group">
-            <button class="btn btn-primary" id="btnDownloadAll" data-i18n="results.downloadAll">Download All</button>
-            <button class="btn btn-ghost" id="btnClear" data-i18n="results.clear">Clear</button>
+            <button class="btn btn-primary" id="btnDownloadAll" data-i18n="results.downloadAll">Alle herunterladen</button>
+            <button class="btn btn-ghost" id="btnClear" data-i18n="results.clear">Leeren</button>
           </div>
         </div>
-        <div class="stats-bar glass-card" id="statsBar"></div>
+        <div class="stats-bar glass-card" id="statsBar" role="status" aria-live="polite"></div>
         <div class="results-grid" id="resultsGrid"></div>
       </section>
 
       <section class="features">
-        <div class="features-grid">
-          <div class="feature glass-card"><div class="feat-icon">🔒</div><h3 data-i18n="features.privacyT">Privacy First</h3><p data-i18n="features.privacyD">Images processed locally in your browser. Nothing uploaded anywhere.</p></div>
-          <div class="feature glass-card"><div class="feat-icon">⚡</div><h3 data-i18n="features.instantT">Instant Results</h3><p data-i18n="features.instantD">Canvas API processes images in milliseconds. No waiting.</p></div>
-          <div class="feature glass-card"><div class="feat-icon">📦</div><h3 data-i18n="features.batchT">Batch Processing</h3><p data-i18n="features.batchD">Drop multiple images and convert them all at once.</p></div>
-          <div class="feature glass-card"><div class="feat-icon">🎨</div><h3 data-i18n="features.formatT">Format Control</h3><p data-i18n="features.formatD">JPEG, PNG, WebP with fine-grained quality settings.</p></div>
+        <h2 class="sr-only" data-i18n="features.title">Was du bekommst</h2>
+        <div class="specsheet glass-card">
+          <div class="spec-row">
+            <span class="spec-idx">01</span>
+            <span class="spec-ic"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M8 11V8a4 4 0 018 0v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>
+            <div class="spec-text"><h3 data-i18n="features.privacyT">Datenschutz zuerst</h3><p data-i18n="features.privacyD">Bilder werden im Browser verarbeitet. Es wird nichts hochgeladen.</p></div>
+          </div>
+          <div class="spec-row">
+            <span class="spec-idx">02</span>
+            <span class="spec-ic"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13 3L4 14h7l-1 7 9-11h-7l1-7z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></span>
+            <div class="spec-text"><h3 data-i18n="features.instantT">Sofortige Ergebnisse</h3><p data-i18n="features.instantD">Die Canvas API verarbeitet Bilder direkt auf deinem Gerät.</p></div>
+          </div>
+          <div class="spec-row">
+            <span class="spec-idx">03</span>
+            <span class="spec-ic"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3.5 8L12 4l8.5 4-8.5 4-8.5-4z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M3.5 12l8.5 4 8.5-4M3.5 16l8.5 4 8.5-4" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></span>
+            <div class="spec-text"><h3 data-i18n="features.batchT">Stapelverarbeitung</h3><p data-i18n="features.batchD">Mehrere Bilder ablegen und gemeinsam konvertieren.</p></div>
+          </div>
+          <div class="spec-row">
+            <span class="spec-idx">04</span>
+            <span class="spec-ic"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.7"/><circle cx="9" cy="9.5" r="1.4" fill="currentColor"/><path d="M5 17l4.5-4.5L13 16l2.5-2.5L19 17" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <div class="spec-text"><h3 data-i18n="features.formatT">Formatkontrolle</h3><p data-i18n="features.formatD">JPEG, PNG und WebP mit Qualitäts- und Größensteuerung.</p></div>
+          </div>
+          <div class="spec-row">
+            <span class="spec-idx">05</span>
+            <span class="spec-ic spec-ic-text" aria-hidden="true">AVIF</span>
+            <div class="spec-text"><h3 data-i18n="features.avifT">Klare Formatgrenze</h3><p data-i18n="features.avifD">AVIF-Ausgabe ist derzeit nicht implementiert.</p></div>
+          </div>
         </div>
       </section>
 
@@ -132,31 +242,57 @@
   </main>
 
   <footer class="footer">
-    <div class="container">
-      <p><span data-i18n="footer.tagline">BunBite · Built with Bun · Client-side image processing</span> · <a href="https://github.com/OthmanAdi/bunbite" target="_blank" rel="noopener" data-i18n="footer.openSource">Open Source</a></p>
+    <div class="container footer-inner">
+      <p><span data-i18n="footer.tagline">BunBite · Mit Bun gebaut · Standardmäßig privat</span> · <a href="https://github.com/OthmanAdi/bunbite" target="_blank" rel="noopener" data-i18n="footer.openSource">Open Source</a> · <a id="extensionLink" href="/support.html#browser-erweiterung" data-i18n="footer.extension">Browser-Erweiterung</a></p>
+      <nav class="footer-links" aria-label="Rechtliches und Support">
+        <a href="/privacy.html" data-i18n="footer.privacy">Datenschutz</a>
+        <a href="/terms.html" data-i18n="footer.terms">Bedingungen</a>
+        <a href="/support.html" data-i18n="footer.support">Support</a>
+      </nav>
     </div>
   </footer>
 
-  <div class="modal-overlay" id="accountModal" hidden>
-    <div class="modal glass-card" role="dialog" aria-modal="true" aria-labelledby="accTitle">
-      <button class="modal-close" id="accClose" aria-label="Close">&times;</button>
-      <h2 id="accTitle" data-i18n="account.title">Your Pro key</h2>
-      <span class="acc-status" id="accStatus"></span>
-      <p class="modal-intro" data-i18n="account.intro">Paste your BunBite Pro API key to unlock Pro limits.</p>
-      <label class="acc-field">
-        <span data-i18n="account.keyLabel">API key</span>
-        <input type="text" id="accKeyInput" data-i18n-attr="placeholder:account.placeholder" placeholder="bunbite_…" autocomplete="off" spellcheck="false">
-      </label>
-      <div class="acc-actions">
-        <button class="btn btn-primary" id="accSave" data-i18n="account.save">Activate</button>
-        <button class="btn btn-ghost" id="accClear" data-i18n="account.clear">Remove</button>
-        <a class="acc-get" href="/pricing.html" data-i18n="account.get">Get a Pro key</a>
-      </div>
-    </div>
-  </div>
 
-  <div class="toast-container" id="toasts"></div>
+  <div class="toast-container" id="toasts" role="status" aria-live="polite"></div>
 
-  <script src="/app.js"></script>
+  <script src="/app.js?v=8"></script>
+  <script>
+    /* Develop bay: drag-to-develop before/after compare (latent dither ↔ developed colour) */
+    (function () {
+      "use strict";
+      var shot = document.getElementById("bayCompare");
+      var handle = document.getElementById("bayHandle");
+      if (!shot || !handle) return;
+      var pos = 45, dragging = false;
+      function set(p) {
+        pos = Math.max(3, Math.min(97, p));
+        /* Drive position with transform (translateX), never layout `left`: keep the % for the
+           paint-only clip-path and set a px offset from the shot's own width for the divider/handle. */
+        shot.style.setProperty("--pos", pos + "%");
+        shot.style.setProperty("--pos-px", (pos / 100 * shot.getBoundingClientRect().width) + "px");
+        handle.setAttribute("aria-valuenow", String(Math.round(pos)));
+      }
+      function fromX(clientX) {
+        var r = shot.getBoundingClientRect();
+        set(((clientX - r.left) / r.width) * 100);
+      }
+      window.addEventListener("resize", function () { set(pos); });
+      shot.addEventListener("pointerdown", function (e) {
+        dragging = true;
+        try { shot.setPointerCapture(e.pointerId); } catch (_) {}
+        fromX(e.clientX);
+      });
+      shot.addEventListener("pointermove", function (e) { if (dragging) fromX(e.clientX); });
+      shot.addEventListener("pointerup", function () { dragging = false; });
+      shot.addEventListener("pointercancel", function () { dragging = false; });
+      handle.addEventListener("keydown", function (e) {
+        if (e.key === "ArrowLeft" || e.key === "ArrowDown") { e.preventDefault(); set(pos - 4); }
+        else if (e.key === "ArrowRight" || e.key === "ArrowUp") { e.preventDefault(); set(pos + 4); }
+        else if (e.key === "Home") { e.preventDefault(); set(0); }
+        else if (e.key === "End") { e.preventDefault(); set(100); }
+      });
+      set(45);
+    })();
+  </script>
 </body>
 </html>

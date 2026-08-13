@@ -1,4 +1,4 @@
-# BunBite — Fly.io config.
+# BunBite Fly.io config for the free public hosted mode.
 # SQLite lives on a single mounted volume, so this app runs as ONE machine.
 # Do not scale horizontally (multiple machines would each get a separate empty
 # volume = split brain). Deploy with: fly deploy --ha=false
@@ -8,11 +8,19 @@ primary_region = "fra" # Frankfurt: close to the EU/Germany audience
 [build]
 
 [env]
+  NODE_ENV = "production"
   PORT = "3000"
   DB_PATH = "/data/bunbite.sqlite"
-  # Must match the real app URL. If the app name "bunbite" is taken and Fly
-  # assigns another, update this to https://<your-app>.fly.dev and redeploy.
-  PUBLIC_BASE_URL = "https://bunbite.fly.dev"
+  # Aggregate event buckets older than this are pruned. This is policy, not a
+  # credential, so it is safe to keep alongside the other public runtime knobs.
+  ANALYTICS_RETENTION_DAYS = "400"
+  # Behind Fly's edge only: trust Fly-Client-IP for per-IP quotas and emit HSTS.
+  # Lives here (not in the Dockerfile) so a bare `docker run` of the same image
+  # ignores spoofable forwarding headers by default.
+  TRUST_PROXY = "1"
+  # Required production-only secret names: ANALYTICS_ADMIN_TOKEN and
+  # QUOTA_HASH_SECRET. Set them through Fly's secret store using values from the
+  # operator's secret manager. Do not add either value here or to a public export.
 
 [http_service]
   internal_port = 3000
@@ -21,12 +29,23 @@ primary_region = "fra" # Frankfurt: close to the EU/Germany audience
   auto_start_machines = true
   min_machines_running = 1 # keep the single SQLite machine always up
 
+  # Right-sized to what ONE shared-cpu-1x can actually do. The app itself bounds
+  # CPU-bound image work to IMAGE_CONCURRENCY (2) with a small queue (24) and
+  # sheds past that with 503 + Retry-After, so these edge limits are a backstop
+  # sized to leave headroom for cheap requests (health, status, static) while
+  # still refusing a flood long before the box is buried. Single machine, so
+  # these gate load; they do not trigger horizontal scaling (which SQLite forbids).
   [http_service.concurrency]
     type = "requests"
-    hard_limit = 250
-    soft_limit = 200
+    hard_limit = 50
+    soft_limit = 30
 
 [[mounts]]
+  # The scratch image starts as root only long enough for its static entrypoint
+  # to repair a fresh or provider-owned volume, then it execs Bun as UID/GID
+  # 1000 with Bun as PID 1.
+  # Fresh exact-image runtime evidence is an external release gate; this file
+  # does not imply a deployment or a current evidence dossier.
   source = "bunbite_data"
   destination = "/data"
 

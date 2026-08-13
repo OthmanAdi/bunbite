@@ -2,8 +2,14 @@
   "name": "bunbite-server",
   "version": "1.0.0",
   "type": "module",
+  "author": "Ahmad Othman Ammar Adi",
+  "license": "MPL-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/OthmanAdi/bunbite.git"
+  },
   "dependencies": {},
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "1.3.14"
   }
 }

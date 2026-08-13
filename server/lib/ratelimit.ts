@@ -1,10 +1,12 @@
 /**
- * BunBite — durable rate limiting + tier resolution (SQLite-backed).
- * Free tier is tracked per IP; Pro per validated key. Survives restart and is
- * correct across redeploys (no in-memory state). Replaces the old in-memory Map
- * and the "any key longer than 10 chars = Pro" bug.
+ * BunBite public hosted-mode quotas.
+ *
+ * Callers share one capability set. A keyed HMAC of the network address is used
+ * only as the durable quota bucket, so raw addresses and credentials never enter
+ * SQLite. Production refuses to start without an operator-provided secret.
  */
-import { isActivePro, getUsage, incrementUsage } from "./db";
+import { createHmac } from "node:crypto";
+import { getUsage, incrementUsage, decrementUsage } from "./db";
 
 export interface RateLimitConfig {
   maxRequestsPerDay: number;
@@ -13,28 +15,78 @@ export interface RateLimitConfig {
   maxBatchSize: number;
 }
 
-export const FREE: RateLimitConfig = {
-  maxRequestsPerDay: 5, maxFileSizeBytes: 5 * 1048576, batchEnabled: false, maxBatchSize: 1,
-};
-export const PRO: RateLimitConfig = {
-  maxRequestsPerDay: 500, maxFileSizeBytes: 50 * 1048576, batchEnabled: true, maxBatchSize: 20,
+export const PUBLIC: RateLimitConfig = {
+  maxRequestsPerDay: 50,
+  maxFileSizeBytes: 20 * 1_048_576,
+  batchEnabled: true,
+  maxBatchSize: 10,
 };
 
-export type Tier = "free" | "pro";
+const configuredSecret = process.env.QUOTA_HASH_SECRET?.trim();
+if (process.env.NODE_ENV === "production" && (!configuredSecret || configuredSecret.length < 32)) {
+  throw new Error("QUOTA_HASH_SECRET must contain at least 32 characters in production");
+}
+const quotaSecret = configuredSecret || "bunbite-local-quota-secret-not-for-production";
 
 export interface Access {
-  tier: Tier;
+  mode: "public";
   config: RateLimitConfig;
-  subject: string; // usage bucket: "key:<k>" for pro, "ip:<addr>" for free
-  apiKey?: string;
+  subject: string;
 }
 
-/** Resolve the caller's tier from a (validated) key, else fall back to free-by-IP. */
-export function resolveAccess(apiKey: string | undefined | null, ip: string): Access {
-  if (apiKey && isActivePro(apiKey)) {
-    return { tier: "pro", config: PRO, subject: `key:${apiKey}`, apiKey };
+export class FixedWindowLimiter {
+  private readonly entries = new Map<string, { count: number; resetAt: number }>();
+
+  constructor(
+    private readonly limit: number,
+    private readonly windowMs: number,
+    private readonly maxSubjects: number,
+  ) {
+    if (limit < 1 || windowMs < 1 || maxSubjects < 1) {
+      throw new Error("FixedWindowLimiter requires positive limits");
+    }
   }
-  return { tier: "free", config: FREE, subject: `ip:${ip}`, apiKey: apiKey || undefined };
+
+  allow(subject: string, now = Date.now()): boolean {
+    this.prune(now);
+    const entry = this.entries.get(subject);
+    if (entry) {
+      if (entry.count >= this.limit) return false;
+      entry.count++;
+      return true;
+    }
+    if (this.entries.size >= this.maxSubjects) this.evictOldest();
+    this.entries.set(subject, { count: 1, resetAt: now + this.windowMs });
+    return true;
+  }
+
+  prune(now = Date.now()): void {
+    for (const [subject, entry] of this.entries) {
+      if (now >= entry.resetAt) this.entries.delete(subject);
+    }
+  }
+
+  get subjectCount(): number {
+    return this.entries.size;
+  }
+
+  private evictOldest(): void {
+    let oldestSubject: string | undefined;
+    let oldestReset = Number.POSITIVE_INFINITY;
+    for (const [subject, entry] of this.entries) {
+      if (entry.resetAt < oldestReset) {
+        oldestReset = entry.resetAt;
+        oldestSubject = subject;
+      }
+    }
+    if (oldestSubject !== undefined) this.entries.delete(oldestSubject);
+  }
+}
+
+/** Build the sole public access policy. Authentication headers are irrelevant. */
+export function resolveAccess(networkAddress: string): Access {
+  const digest = createHmac("sha256", quotaSecret).update(networkAddress).digest("hex");
+  return { mode: "public", config: PUBLIC, subject: `caller:${digest}` };
 }
 
 function nextUtcMidnight(): string {
@@ -50,6 +102,21 @@ export function check(subject: string, config: RateLimitConfig): LimitResult {
   const resetAt = nextUtcMidnight();
   if (used >= config.maxRequestsPerDay) return { allowed: false, remaining: 0, resetAt };
   return { allowed: true, remaining: config.maxRequestsPerDay - used, resetAt };
+}
+
+/** Atomically reserve one daily conversion unit. */
+export function consume(subject: string, config: RateLimitConfig): LimitResult {
+  const used = incrementUsage(subject);
+  const resetAt = nextUtcMidnight();
+  if (used > config.maxRequestsPerDay) {
+    decrementUsage(subject);
+    return { allowed: false, remaining: 0, resetAt };
+  }
+  return { allowed: true, remaining: config.maxRequestsPerDay - used, resetAt };
+}
+
+export function refund(subject: string): void {
+  decrementUsage(subject);
 }
 
 export function increment(subject: string): void {

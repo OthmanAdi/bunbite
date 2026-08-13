@@ -1,0 +1,79 @@
+{
+  "schemaVersion": "flagship-product-contract/v1",
+  "productId": "bunbite",
+  "name": "BunBite",
+  "version": "1.0.0",
+  "author": "Ahmad Othman Ammar Adi",
+  "publisher": "Ahmad Othman Ammar Adi",
+  "license": "MPL-2.0",
+  "canonical": {
+    "root": ".",
+    "rootRole": "single-product-authority",
+    "repository": {
+      "url": "https://github.com/OthmanAdi/bunbite",
+      "role": "canonical-product-source"
+    }
+  },
+  "publicEditions": ["public"],
+  "releaseState": {
+    "status": "pending",
+    "deployment": "pending",
+    "publicSignedArtifacts": "pending",
+    "evidenceMode": "schema-only",
+    "attestedManifests": []
+  },
+  "internalBuilds": [],
+  "capabilityCatalog": [
+    { "id": "web.local.optimize", "surface": "public" },
+    { "id": "web.local.batch", "surface": "public" },
+    { "id": "web.hosted.optimize.fair-use", "surface": "public" },
+    { "id": "extension.local.optimize", "surface": "public" },
+    { "id": "extension.local.batch", "surface": "public" },
+    { "id": "extension.hosted.connect", "surface": "public" }
+  ],
+  "editionCapabilityPolicy": {
+    "public": [
+      "web.local.optimize",
+      "web.local.batch",
+      "web.hosted.optimize.fair-use",
+      "extension.local.optimize",
+      "extension.local.batch",
+      "extension.hosted.connect"
+    ]
+  },
+  "platformPolicy": {
+    "allowed": ["web", "chromium-mv3", "cloud-linux-x64"],
+    "notClaimed": ["firefox-extension", "safari-extension", "native-desktop"]
+  },
+  "releaseRequirements": {
+    "signing": {
+      "requiredForPublicArtifacts": true,
+      "unsignedPublicReleaseAllowed": false,
+      "exceptionPolicy": "explicit-owner-approved-artifact-contract"
+    },
+    "notices": {
+      "required": true,
+      "status": "pending-fresh-source-bound-generation",
+      "generatorPath": "scripts/generate-release-compliance.mjs",
+      "containerNoticeOutput": "CONTAINER_LICENSE_NOTICES.txt"
+    },
+    "sbom": {
+      "required": true,
+      "format": "cyclonedx-json",
+      "specVersion": "1.6",
+      "generatorPath": "scripts/generate-release-compliance.mjs",
+      "verificationPath": "scripts/verify-release-compliance.mjs",
+      "containerVerificationPath": "scripts/verify-container-compliance.mjs",
+      "rawScannerEvidenceRequired": true,
+      "evidenceBinding": "exact-source-commit-and-image-digest",
+      "status": "pending-fresh-source-bound-generation"
+    },
+    "checksums": { "required": true, "algorithm": "sha256", "manifestRequired": true }
+  },
+  "allowedArtifactRoles": ["browser-extension-zip", "cloud-deployment"],
+  "requiredExternalGates": [
+    { "id": "chromium-store-signing", "required": true, "status": "pending" },
+    { "id": "canonical-domain", "required": true, "status": "pending" },
+    { "id": "production-cloud-deployment", "required": true, "status": "pending" }
+  ]
+}

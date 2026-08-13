@@ -1,69 +1,67 @@
-# Deploying BunBite to Fly.io
+# BunBite bereitstellen
 
-BunBite runs as a single Bun machine with a mounted SQLite volume. One machine only
-(SQLite is single writer). The app is fully usable on the free tier without Stripe;
-billing endpoints return 503 until the Stripe secrets below are set.
+Der Deployment-Status ist offen. Dieses Dokument beschreibt ein Verfahren; es belegt weder einen laufenden Produktionsdienst noch eine kanonische Domain oder einen aktuellen Release.
 
-## 1. Authenticate (you, once)
-```bash
-fly auth login            # opens a browser
-# or, headless:  export FLY_API_TOKEN=...   (fly tokens create deploy)
+## 1. Fly-Bestand nur lesend prüfen
+
+Vor jeder Änderung muss ein autorisierter Operator das Ziel eindeutig identifizieren:
+
+```sh
+flyctl auth whoami
+flyctl orgs list
+flyctl apps list
+flyctl status --app bunbite --all
+flyctl machines list --app bunbite
+flyctl volumes list --app bunbite --all
+flyctl ips list --app bunbite
+flyctl certs list --app bunbite
+flyctl secrets list --app bunbite
+flyctl releases --app bunbite --image
 ```
 
-## 2. Create the app + volume + deploy
-```bash
-fly apps create bunbite                              # pick another name if taken
-fly volumes create bunbite_data --region fra --size 1
-fly deploy --ha=false                                # --ha=false keeps it to ONE machine
-```
-If you used a different app name, edit `PUBLIC_BASE_URL` in `fly.toml` to
-`https://<your-app>.fly.dev` and run `fly deploy --ha=false` again.
+Zu protokollieren sind Organisation, App, Maschinen, Volumes, Netzwerkidentität, Zertifikatsstatus, aktueller Image-Digest, Release-Historie sowie Namen und Provider-Digests der Secrets. `flyctl secrets list` zeigt keine Secret-Werte. Bei unklarer Identität oder Datenhoheit darf nichts erstellt, skaliert, neu gestartet, ersetzt oder bereitgestellt werden.
 
-Verify:
-```bash
-fly status                       # must show exactly ONE machine
-curl https://<app>.fly.dev/api/health     # {"status":"ok",...}
-curl https://<app>.fly.dev/api/config     # {"billing":false} until step 4
-```
+Die eingecheckte `fly.toml` beschreibt lediglich Konfigurationsabsicht und ist kein Nachweis des Live-Zustands.
 
-## 3. Create Stripe products + prices (test mode)
-With your `sk_test_` key, the prices can be created by API (the agent can run this for you):
-```bash
-SK=sk_test_xxx
-PROD=$(curl -s https://api.stripe.com/v1/products -u "$SK:" -d name="BunBite Pro" | jq -r .id)
-curl -s https://api.stripe.com/v1/prices -u "$SK:" \
-  -d product="$PROD" -d unit_amount=900 -d currency=eur \
-  -d "recurring[interval]"=month | jq -r .id     # -> STRIPE_PRICE_MONTHLY
-curl -s https://api.stripe.com/v1/prices -u "$SK:" \
-  -d product="$PROD" -d unit_amount=9000 -d currency=eur \
-  -d "recurring[interval]"=year | jq -r .id      # -> STRIPE_PRICE_YEARLY
-```
+## 2. Unveränderlichen Release qualifizieren
 
-## 4. Set secrets
-```bash
-fly secrets set \
-  STRIPE_SECRET_KEY=sk_test_xxx \
-  STRIPE_PRICE_MONTHLY=price_xxx \
-  STRIPE_PRICE_YEARLY=price_xxx
-```
+Aus einem sauberen, geprüften Quellstand:
 
-## 5. Create the webhook, then set its secret
-In the Stripe dashboard (Developers -> Webhooks) add an endpoint:
-- URL: `https://<app>.fly.dev/api/stripe/webhook`
-- Events: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`
+1. Web-, Server-, i18n- und Browser-Prüfungen ausführen.
+2. Das Container-Image exakt aus diesem Commit bauen.
+3. Frische Build-Provenienz, Scanner-Rohdaten, SBOM und Drittanbieterhinweise an Commit und Image-Digest binden.
+4. Deterministische Compliance-Ausgaben außerhalb des Repositorys erzeugen und vergleichen.
+5. Den Laufzeitnachweis am exakten Image ausführen.
+6. Commit, Registry-Digest, Evidenz-Hashes, getestetes Backup und Rollback-Digest im Release-Datensatz festhalten.
 
-Copy the signing secret (`whsec_...`) and set it:
-```bash
-fly secrets set STRIPE_WEBHOOK_SECRET=whsec_xxx
-```
-Setting secrets restarts the app. Then `curl .../api/config` should report `{"billing":true}`.
+Historische Evidenz oder frühere Risikoentscheidungen gelten nicht automatisch für einen Neubau. Dieses öffentliche Web-Repository enthält keine aktuelle private Release-Evidenz und behauptet keine Compliance-Zertifizierung.
 
-## 6. Smoke test the purchase
-Open `/pricing.html`, click Go Pro, pay with Stripe test card `4242 4242 4242 4242`
-(any future expiry / any CVC). You land on `/success.html`, which reveals your key and
-activates it in the app. The header pill should switch to Pro.
+## 3. Secrets
 
-## Notes
-- Custom domain later: `fly certs add bunbite.app` then update `PUBLIC_BASE_URL`.
-- Logs: `fly logs`. Restart: `fly apps restart <app>`.
-- The volume persists across deploys, so issued keys and usage survive restarts.
+Für das öffentliche Produktmodell sind ausschließlich diese Anwendungs-Secrets erforderlich:
+
+- `QUOTA_HASH_SECRET`: mindestens 32 Zeichen, bildet pseudonymisierte keyed-HMAC-Kennungen für die UTC-Tagesquote.
+- `ANALYTICS_ADMIN_TOKEN`: schützt die private Zusammenfassung aggregierter Ereigniszähler.
+
+Werte gehören ausschließlich in den Secret Manager des Providers, niemals in Quellcode, Tickets, Screenshots oder Befehlsausgaben. Keine Zahlungs-, Checkout-, Abo-, Portal-, E-Mail-Zustellungs- oder Zugangsschlüssel-Secrets konfigurieren.
+
+## 4. Deployment-Grenze
+
+Eine Bereitstellung benötigt ausdrückliche Freigabe, ein getestetes Datenbackup, aktuelle Release-Evidenz und ein protokolliertes Rollback-Ziel. Bereitgestellt wird ein unveränderlicher Registry-Digest, kein beweglicher Tag. Das verifizierte Volume bleibt erhalten; eine Datenbank wird nur bei nachgewiesener Beschädigung wiederhergestellt.
+
+Nach dem Deployment am exakten öffentlichen Ursprung prüfen:
+
+- `/api/health`, App-Shell sowie lokale und Hosted-Bildoptimierung
+- 50 Konvertierungen pro UTC-Tag, 20 MiB pro Datei, Stapelgröße 10 und Lastabweisung
+- Deutsch, Englisch und Arabisch einschließlich arabischem RTL
+- Datenschutz, Bedingungen, Support, `robots.txt` und Sitemap
+- Analytics-Allowlist, DNT-Unterdrückung und vollständige Same-Origin-Prüfung mit Schema, Host und Port
+- keine CORS-Freigabe für Analytics-Summary-Antworten, auch nicht bei 401 oder 503
+- Sicherheitsheader, sauberer Neustart und Datenpersistenz
+- ausschließlich `QUOTA_HASH_SECRET` und `ANALYTICS_ADMIN_TOKEN` als Anwendungs-Secrets
+
+Das [Deployment-Runbook](docs/DEPLOYMENT_RUNBOOK.md) enthält die Release- und Rollback-Gates.
+
+## English summary
+
+Deployment remains pending. Inventory Fly with the exact read-only commands above, configure only `QUOTA_HASH_SECRET` and `ANALYTICS_ADMIN_TOKEN`, deploy an immutable digest only after explicit authorization, and require fresh source-bound release evidence.

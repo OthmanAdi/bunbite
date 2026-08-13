@@ -1,0 +1,13 @@
+{
+  "name": "BunBite",
+  "short_name": "BunBite",
+  "description": "Bildoptimierung für WebP, JPEG und PNG im Browser, mit optionaler kostenloser Hosted-Verarbeitung.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A0A0F",
+  "theme_color": "#0A0A0F",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

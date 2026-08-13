@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "flagship-edition-contract/v1",
+  "productId": "bunbite",
+  "productVersion": "1.0.0",
+  "editionId": "public",
+  "name": "BunBite",
+  "audience": "public",
+  "commercial": { "accessModes": ["no-charge"] },
+  "delivery": {
+    "modes": ["web-app", "chromium-extension", "hosted-fair-use-service"],
+    "localProcessing": "immediate",
+    "projectionTool": { "path": "extension/scripts/package.ps1", "kind": "deterministic-extension-packager" }
+  },
+  "capabilities": [
+    "web.local.optimize",
+    "web.local.batch",
+    "web.hosted.optimize.fair-use",
+    "extension.local.optimize",
+    "extension.local.batch",
+    "extension.hosted.connect"
+  ],
+  "artifacts": [
+    { "role": "browser-extension-zip", "platform": "chromium-mv3", "public": true, "required": true, "releaseStatus": "pending-signing" },
+    { "role": "cloud-deployment", "platform": "cloud-linux-x64", "public": true, "required": true, "releaseStatus": "pending-deployment" }
+  ]
+}

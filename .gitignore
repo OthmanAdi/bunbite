@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
 bun.lock
+!server/bun.lock
 
 # Build outputs
 dist/
@@ -43,9 +44,21 @@ temp/
 
 # Agent working memory (planning-with-files)
 .planning/
+.claude/
 
 # SQLite (durable store lives on Fly volume, not in repo)
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal
 data/
+
+# Experiment writeup page (off-brand vs the Latent system; kept local, not shipped)
+landing/
+
+# Test scratch
+.bbtest.key
+
+# Generated verification and release evidence (retained locally, never source)
+/.verify-build/
+/extension/evidence/
+/extension/packages/
